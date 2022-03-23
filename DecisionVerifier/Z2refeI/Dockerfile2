@@ -1,0 +1,8 @@
+FROM node:12
+WORKDIR /app
+EXPOSE 4002
+COPY --from=docker:20.10 /usr/local/bin/docker /usr/local/bin/
+COPY ./DecisionVerifier/code /app
+COPY ./out/Z2refeI /app/out
+RUN npm install
+CMD ["npm", "start"]

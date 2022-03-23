@@ -1,0 +1,55 @@
+
+        version: '2'
+        services:
+            node-verifier-1:
+                build:
+                    context: ../../
+                    dockerfile: ./DecisionVerifier/Z2refeI/Dockerfile0
+                environment:
+                    PORT: 4000
+                    PEERNR: peer0.Lane1
+                    NETWORKID: Z2refeI
+                ports:
+                    - '4000:4000'
+                privileged: true
+                volumes: 
+                    - "/var/run/docker.sock:/var/run/docker.sock"
+            node-verifier-2:
+                build:
+                    context: ../../
+                    dockerfile: ./DecisionVerifier/Z2refeI/Dockerfile1
+                environment:
+                    PORT: 4001
+                    PEERNR: peer1.Lane1
+                    NETWORKID: Z2refeI
+                ports:
+                    - '4001:4001'
+                privileged: true
+                volumes: 
+                    - "/var/run/docker.sock:/var/run/docker.sock"
+            node-verifier-3:
+                build:
+                    context: ../../
+                    dockerfile: ./DecisionVerifier/Z2refeI/Dockerfile2
+                environment:
+                    PORT: 4002
+                    PEERNR: peer2.Lane1
+                    NETWORKID: Z2refeI
+                ports:
+                    - '4002:4002'
+                privileged: true
+                volumes: 
+                    - "/var/run/docker.sock:/var/run/docker.sock"
+            node-verifier-4:
+                build:
+                    context: ../../
+                    dockerfile: ./DecisionVerifier/Z2refeI/Dockerfile3
+                environment:
+                    PORT: 4003
+                    PEERNR: peer3.Lane1
+                    NETWORKID: Z2refeI
+                ports:
+                    - '4003:4003'
+                privileged: true
+                volumes: 
+                    - "/var/run/docker.sock:/var/run/docker.sock"

@@ -1,0 +1,9 @@
+  peer${peerNumber}.${peerDomainPrefix}.${domain}:
+    container_name: peer${peerNumber}.${peerDomainPrefix}.${domain}
+    extends:
+      file:  base/docker-compose-base.yaml
+      service: peer${peerNumber}.${peerDomainPrefix}.${domain}
+    networks:
+      - ${unique_id}
+    depends_on: 
+     - couchdb.peer${peerNumber}.${peerDomainPrefix}.${domain}

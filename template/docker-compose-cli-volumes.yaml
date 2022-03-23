@@ -1,0 +1,2 @@
+  peer${peerNumber}.${peerDomainPrefix}.${domain}:
+  couchdb.peer${peerNumber}.${peerDomainPrefix}.${domain}:
