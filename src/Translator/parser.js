@@ -35,6 +35,7 @@ var HashSet = require('hashset');
 var generateYAML = require('./YamlGenerator');
 var generateGo = require('./ChaincodeGenerator');
 var logger = require('../Logger/logger');
+var calculateChannelsAndIssuedTransactions = require("../calculateChannelsAndIssuedTransactions")
 
 
 // Helper structure for an object in BPMN (event, task, gateway)
@@ -525,11 +526,22 @@ function parse(data,unique_id){
     try {generateYAML(orgs, unique_id, processParticipants);}
     catch (err) {return {errors: [err.toString()], num_peers: orgs.length, chaincode: null};}
    
-    try {generateGo(unique_id, taskObjArray);}
+    if (unique_id == "Z2refeI") {
+        channelList = fs.readFileSync("../out/Z2refeI/channelList.txt", { encoding: "utf-8"})
+        channelList = JSON.parse(channelList)
+        annotatedTasks = fs.readFileSync("../out/Z2refeI/annotatedTasks.txt", { encoding: "utf-8"})
+        annotatedTasks = JSON.parse(annotatedTasks)
+    } else {
+        throw new Error("Please generate channels and annotated tasks based on out/Z2refeI")
+    }
+
+
+    try {generateGo(unique_id, taskObjArray, annotatedTasks);}
     catch (err) {return {errors: [err.toString()], num_peers: orgs.length, chaincode: null};}
 
     var file = out_root + unique_id + "/peers.txt";
     var fileMapping = out_root + unique_id + "/peersMapping.txt";
+    var fileAnnotatedTasks = out_root + unique_id + "/annotatedTasks.txt";
     var fileTaskMapping = out_root + unique_id + "/taskMapping.txt";
     var fileDecisionsGateways = out_root + unique_id + "/decisionsGateways.txt";
     
@@ -540,10 +552,22 @@ function parse(data,unique_id){
     } 
     fs.writeFileSync(file, "");
     fs.writeFileSync(fileMapping, "");
+    fs.writeFileSync(fileAnnotatedTasks, "");
     fs.writeFileSync(fileTaskMapping, "");
     fs.writeFileSync(fileDecisionsGateways, "");
 
-   
+    var writeFileAnnotatedTasks = [];
+    for (var ann in annotatedTasks) {
+        for (var el of annotatedTasks[ann])
+            writeFileAnnotatedTasks.push({ 
+                taskId: ann, 
+                taskName: taskObjArray.filter(el => el.ID == ann)[0].Name,
+                dataAsset: el.dataAsset, 
+                channel: el.channel,
+                writes: el.writes, 
+                origin: el.origin
+            })
+    }
     var writeFileTaskMapping = []
     for (var task of tasks) {
         writeFileTaskMapping.push({
@@ -552,6 +576,8 @@ function parse(data,unique_id){
         })
     }
     fs.appendFileSync(fileTaskMapping, JSON.stringify(writeFileTaskMapping));
+    fs.appendFileSync(fileAnnotatedTasks, JSON.stringify(writeFileAnnotatedTasks));
+    
     let decisionsGateways = { decisions: [], gateways: [] };
     for (var annotatedDecision in annotatedDecisions) {
         decisionsGateways.decisions.push({
@@ -586,7 +612,18 @@ function parse(data,unique_id){
     var gofile = out_root + unique_id + "/chaincode/chaincode.go";
     var chaincode = fs.readFileSync(gofile,'utf-8');
 
-   return {errors: null, num_peers: processParticipantsArray.length, chaincode: chaincode, peers: peerList};
+    // Write channelList to a file
+    var fileChannels = out_root + unique_id + "/channelList.txt";
+    fs.writeFileSync(fileChannels, JSON.stringify(channelList));
+    // 
+    let listOfDocuments = calculateChannelsAndIssuedTransactions.getListOfDocuments(writeFileAnnotatedTasks)
+	let listOfReads = calculateChannelsAndIssuedTransactions.getChannelsFromWhichVerifiersRead(writeFileAnnotatedTasks, listOfDocuments, channelList, decisionsGateways.decisions.length)
+    let documentMapping = []
+    for (let key of Object.keys(processAnnotations.documents.names))
+        documentMapping.push({ id: key, name: processAnnotations.documents.names[key]})
+    fs.writeFileSync(out_root + unique_id + "/documentMapping.txt", JSON.stringify(documentMapping))
+    fs.writeFileSync(out_root + unique_id + "/readingCombinations.txt", JSON.stringify(listOfReads))
+	return {errors: null, num_peers: processParticipantsArray.length, chaincode: chaincode, peers: peerList};
 }
 
 

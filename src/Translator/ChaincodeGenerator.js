@@ -37,7 +37,7 @@ function checkPath(unique_id) {
 
 
 // Main function to generate chaincode go file
-function generateGo(unique_id, tasks) {
+function generateGo(unique_id, tasks, annotatedTasks) {
     //console.log('---begin generating Go chaincode---');
     logger.log('translator','---begin generating Go chaincode---');
     
@@ -65,6 +65,14 @@ function generateGo(unique_id, tasks) {
     // Write all elements(Tasks)
     var event_setup_template = fs.readFileSync(template_root+'chaincode_event_setup.go', 'utf8');
     for (var i=0; i<tasks.length; i++) {
+        // find the annotated task by key
+        var annotatedFoundTask = []; 
+        for (var j in annotatedTasks) {
+            if (j == tasks[i].ID) {
+                annotatedFoundTask.push(annotatedTasks[j]);
+                
+            }
+        }
         
         var task = tasks[i]
         var Type = '"'+task.Type+'"';
@@ -87,7 +95,28 @@ function generateGo(unique_id, tasks) {
         } else if (Type=='"task"') {
             function_control = 'Functions[event.Name]=event.ID';
         }
-        
+        var DataAsset = '{}', Writes = '{}'; 
+        if (task.Type == 'task' && annotatedFoundTask[0] && annotatedFoundTask[0].length > 0) {
+            DataAsset = '{"'
+            Writes = '{"'
+            for (var j = 0; j < annotatedFoundTask[0].length; j++) {
+                var currentTask = annotatedFoundTask[0][j];
+                DataAsset += currentTask.dataAsset + '"'
+                if (j != annotatedFoundTask[0].length - 1) DataAsset += ',"';
+
+                Writes += currentTask.writes + '"'
+                if (j != annotatedFoundTask[0].length - 1) Writes += ',"';
+            }
+            DataAsset += '}';
+            Writes += '}'
+            // DataAsset = '"' + annotatedFoundTask.dataAsset + '"'; 
+            // Writes = annotatedFoundTask.writes;
+        }
+        // do the calculation here for enforceability
+        var EnforceNumber = 0;
+        event_setup_template.split(/\r?\n/).forEach(function(line){
+            fs.appendFileSync(outpath,eval('`'+line+'\n`'));
+        });
     }
 
     // Write remaining body part
