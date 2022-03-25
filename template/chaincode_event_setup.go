@@ -7,9 +7,6 @@
         ANDtoken: map[string]int {${AND_token}},
         Children: []string {${Children}},
         Lane: ${Lane},
-        Writes: []string ${Writes},
-        DataAsset: []string ${DataAsset},
-        EnforceNumber: ${EnforceNumber},
     }
     ${function_control}
     eventAsBytes, _ = json.Marshal(event)

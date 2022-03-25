@@ -1,0 +1,4 @@
+peer0.Lane1 -> Buyer 
+peer1.Lane1 -> Warehouse 
+peer2.Lane1 -> Sales 
+peer3.Lane1 -> Manufacturer 
