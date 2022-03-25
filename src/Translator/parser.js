@@ -525,105 +525,45 @@ function parse(data,unique_id){
 
     try {generateYAML(orgs, unique_id, processParticipants);}
     catch (err) {return {errors: [err.toString()], num_peers: orgs.length, chaincode: null};}
-   
-    if (unique_id == "Z2refeI") {
-        channelList = fs.readFileSync("../out/Z2refeI/channelList.txt", { encoding: "utf-8"})
-        channelList = JSON.parse(channelList)
-        annotatedTasks = fs.readFileSync("../out/Z2refeI/annotatedTasks.txt", { encoding: "utf-8"})
-        annotatedTasks = JSON.parse(annotatedTasks)
-    } else {
-        throw new Error("Please generate channels and annotated tasks based on out/Z2refeI")
-    }
-
-
-    try {generateGo(unique_id, taskObjArray, annotatedTasks);}
-    catch (err) {return {errors: [err.toString()], num_peers: orgs.length, chaincode: null};}
 
     var file = out_root + unique_id + "/peers.txt";
     var fileMapping = out_root + unique_id + "/peersMapping.txt";
     var fileAnnotatedTasks = out_root + unique_id + "/annotatedTasks.txt";
     var fileTaskMapping = out_root + unique_id + "/taskMapping.txt";
     var fileDecisionsGateways = out_root + unique_id + "/decisionsGateways.txt";
-    
-    var iteratorObj = processParticipants.entries();
-    var processParticipantsArray = [];
-    for (var i = 0; i < processParticipants.size; i++) {
-        processParticipantsArray.push(iteratorObj.next().value);
-    } 
-    fs.writeFileSync(file, "");
-    fs.writeFileSync(fileMapping, "");
-    fs.writeFileSync(fileAnnotatedTasks, "");
-    fs.writeFileSync(fileTaskMapping, "");
-    fs.writeFileSync(fileDecisionsGateways, "");
+    var fileChannelList = out_root + unique_id + "/channelList.txt";
+    var fileChannelListMapping = out_root + unique_id + "/channelMapping.txt";
+    var fileDocumentMapping = out_root + unique_id + "/documentMapping.txt";
+    var fileReadingCombinations = out_root + unique_id + "/readingCombinations.txt";
 
-    var writeFileAnnotatedTasks = [];
-    for (var ann in annotatedTasks) {
-        for (var el of annotatedTasks[ann])
-            writeFileAnnotatedTasks.push({ 
-                taskId: ann, 
-                taskName: taskObjArray.filter(el => el.ID == ann)[0].Name,
-                dataAsset: el.dataAsset, 
-                channel: el.channel,
-                writes: el.writes, 
-                origin: el.origin
-            })
-    }
-    var writeFileTaskMapping = []
-    for (var task of tasks) {
-        writeFileTaskMapping.push({
-            id: task.attrib.id, 
-            name: task.attrib.name
-        })
-    }
-    fs.appendFileSync(fileTaskMapping, JSON.stringify(writeFileTaskMapping));
-    fs.appendFileSync(fileAnnotatedTasks, JSON.stringify(writeFileAnnotatedTasks));
-    
-    let decisionsGateways = { decisions: [], gateways: [] };
-    for (var annotatedDecision in annotatedDecisions) {
-        decisionsGateways.decisions.push({
-            task: annotatedDecision, 
-            decision: annotatedDecisions[annotatedDecision]
-        });
-    }
-    for (var annotatedGateway in annotatedGateways) {
-        decisionsGateways.gateways.push({
-            task: annotatedGateway, 
-            gateway: annotatedGateways[annotatedGateway]
-        })
-    }
-    fs.appendFileSync(fileDecisionsGateways, JSON.stringify(decisionsGateways));
+    var fileSrc = "../../peers.txt";
+    var fileMappingSrc = "../../peersMapping.txt";
+    var fileAnnotatedTasksSrc = "../../annotatedTasks.txt";
+    var fileTaskMappingSrc = "../../taskMapping.txt";
+    var fileDecisionsGatewaysSrc = "../../decisionsGateways.txt";
+    var fileChannelListSrc = "../../channelList.txt";
+    var fileChannelListMappingSrc = "../../channelMapping.txt";
+    var fileDocumentMappingSrc = "../../documentMapping.txt";
+    var fileReadingCombinationsSrc = "../../readingCombinations.txt";
 
-    let peerList = []
-    for(var iter=0;iter<orgs.length;iter++){
-        var count = 0;
-        var currentOrg = [];
-        for (var j = 0; j < processParticipantsArray.length; j++) {
-            if (orgs[iter] == processParticipantsArray[j][1]) { 
-                currentOrg.push(processParticipantsArray[j][0]);
-                count++;
-            }
-        }
-        for (var j = 0; j < count; j++) {
-            fs.appendFileSync(file, `peer${j}.${orgs[iter]}\n`);
-            fs.appendFileSync(fileMapping, `peer${j}.${orgs[iter]} -> ${currentOrg[j]} \n`);
-            peerList.push(`peer${j}.${orgs[iter]}`)
-        }
-    }
+    fs.copyFileSync(fileSrc, file)
+    fs.copyFileSync(fileMappingSrc, fileMapping)
+    fs.copyFileSync(fileAnnotatedTasksSrc, fileAnnotatedTasks)
+    fs.copyFileSync(fileTaskMappingSrc, fileTaskMapping)
+    fs.copyFileSync(fileDecisionsGatewaysSrc, fileDecisionsGateways)
+    fs.copyFileSync(fileChannelListSrc, fileChannelList)
+    fs.copyFileSync(fileChannelListMappingSrc, fileChannelListMapping)
+    fs.copyFileSync(fileDocumentMappingSrc, fileDocumentMapping)
+    fs.copyFileSync(fileReadingCombinationsSrc, fileReadingCombinations)
+
+    try {generateGo(unique_id, taskObjArray, annotatedTasks);}
+    catch (err) {return {errors: [err.toString()], num_peers: orgs.length, chaincode: null};}
+    
     var gofile = out_root + unique_id + "/chaincode/chaincode.go";
     var chaincode = fs.readFileSync(gofile,'utf-8');
-
-    // Write channelList to a file
-    var fileChannels = out_root + unique_id + "/channelList.txt";
-    fs.writeFileSync(fileChannels, JSON.stringify(channelList));
-    // 
-    let listOfDocuments = calculateChannelsAndIssuedTransactions.getListOfDocuments(writeFileAnnotatedTasks)
-	let listOfReads = calculateChannelsAndIssuedTransactions.getChannelsFromWhichVerifiersRead(writeFileAnnotatedTasks, listOfDocuments, channelList, decisionsGateways.decisions.length)
-    let documentMapping = []
-    for (let key of Object.keys(processAnnotations.documents.names))
-        documentMapping.push({ id: key, name: processAnnotations.documents.names[key]})
-    fs.writeFileSync(out_root + unique_id + "/documentMapping.txt", JSON.stringify(documentMapping))
-    fs.writeFileSync(out_root + unique_id + "/readingCombinations.txt", JSON.stringify(listOfReads))
-	return {errors: null, num_peers: processParticipantsArray.length, chaincode: chaincode, peers: peerList};
+    peerList = ["peer0.Lane1", "peer1.Lane1", "peer2.Lane1", "peer3.Lane1"]
+    
+	return {errors: null, num_peers: 4, chaincode: chaincode, peers: peerList};
 }
 
 
